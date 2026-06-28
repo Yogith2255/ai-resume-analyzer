@@ -50,7 +50,7 @@ app.use(
   )
 );
 
-app.get("*", (_req, res) => {
+app.use((req, res) => {
   res.sendFile(
     path.join(__dirname, "../frontend-react/dist/index.html")
   );
