@@ -10,7 +10,7 @@ exports.generateQuestions = async (req, res) => {
       return res.status(400).json({ error: "Job description cannot be empty." });
     }
 
-    const userSkills = getUserSkills(userId);
+    const userSkills = await getUserSkills(userId);
     const questions = await aiService.generateInterviewQuestions({
       userSkills,
       jdText
@@ -34,7 +34,7 @@ exports.evaluateAnswers = async (req, res) => {
       return res.status(400).json({ error: "Questions and answers must be arrays." });
     }
 
-    const userSkills = getUserSkills(userId);
+    const userSkills = await getUserSkills(userId);
     const evaluation = await aiService.evaluateInterviewAnswers({
       questions,
       answers,
@@ -60,7 +60,7 @@ exports.chatTurn = async (req, res) => {
       return res.status(400).json({ error: "Job description cannot be empty." });
     }
 
-    const userSkills = getUserSkills(userId);
+    const userSkills = await getUserSkills(userId);
     const reply = await aiService.generateInterviewChatResponse({
       jdText,
       chatHistory,
@@ -86,7 +86,7 @@ exports.evaluateChatHistory = async (req, res) => {
       return res.status(400).json({ error: "Chat history must be a non-empty array." });
     }
 
-    const userSkills = getUserSkills(userId);
+    const userSkills = await getUserSkills(userId);
     const evaluation = await aiService.evaluateInterviewChat({
       chatHistory,
       userSkills,

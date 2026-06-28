@@ -1,6 +1,3 @@
-app = "career-lens"
-primary_region = "bos"
-
 [build]
   dockerfile = "Dockerfile"
 

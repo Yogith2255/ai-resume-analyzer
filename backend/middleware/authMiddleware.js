@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const db = require("../config/database");
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   try {
     const token = req.cookies.token;
 
@@ -16,11 +16,11 @@ const authMiddleware = (req, res, next) => {
       process.env.JWT_SECRET
     );
 
-    const user = db
-      .prepare(
-        "SELECT id, full_name, email FROM users WHERE id = ?"
-      )
-      .get(decoded.userId);
+    const result = await db.query(
+      "SELECT id, full_name, email FROM users WHERE id = $1",
+      [decoded.userId]
+    );
+    const user = result.rows[0];
 
     if (!user) {
       return res.status(401).json({

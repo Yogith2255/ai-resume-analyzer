@@ -1,9 +1,9 @@
 const { getSkills } = require("../services/skillService");
 const db = require("../config/database");
 
-exports.getSkills = (req, res) => {
+exports.getSkills = async (req, res) => {
   try {
-    const skills = getSkills(req.user.id);
+    const skills = await getSkills(req.user.id);
     res.json({
       skills: skills.map(item => item.skill_name)
     });
@@ -13,19 +13,20 @@ exports.getSkills = (req, res) => {
   }
 };
 
-exports.addSkill = (req, res) => {
+exports.addSkill = async (req, res) => {
   try {
     const { skillName } = req.body;
     if (!skillName || skillName.trim() === "") {
       return res.status(400).json({ error: "Skill name cannot be empty" });
     }
 
-    db.prepare(`
-      INSERT OR IGNORE INTO user_skills (user_id, skill_name)
-      VALUES (?, ?)
-    `).run(req.user.id, skillName.trim());
+    await db.query(`
+      INSERT INTO user_skills (user_id, skill_name)
+      VALUES ($1, $2)
+      ON CONFLICT (user_id, skill_name) DO NOTHING
+    `, [req.user.id, skillName.trim()]);
 
-    const skills = getSkills(req.user.id);
+    const skills = await getSkills(req.user.id);
     res.json({
       skills: skills.map(item => item.skill_name)
     });
@@ -35,19 +36,19 @@ exports.addSkill = (req, res) => {
   }
 };
 
-exports.deleteSkill = (req, res) => {
+exports.deleteSkill = async (req, res) => {
   try {
     const { skillName } = req.params;
     if (!skillName) {
       return res.status(400).json({ error: "Skill name is required" });
     }
 
-    db.prepare(`
+    await db.query(`
       DELETE FROM user_skills
-      WHERE user_id = ? AND skill_name = ?
-    `).run(req.user.id, skillName);
+      WHERE user_id = $1 AND skill_name = $2
+    `, [req.user.id, skillName]);
 
-    const skills = getSkills(req.user.id);
+    const skills = await getSkills(req.user.id);
     res.json({
       skills: skills.map(item => item.skill_name)
     });

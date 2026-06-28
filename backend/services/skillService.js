@@ -1,46 +1,39 @@
 const db = require("../config/database");
 
-
-function getUserSkills(userId) {
-    return db
-      .prepare(`
-        SELECT skill_name
-        FROM user_skills
-        WHERE user_id = ?
-      `)
-      .all(userId)
-      .map(skill => skill.skill_name);
-  }
-function saveSkills(userId, skills) {
-  const insertSkill = db.prepare(`
-    INSERT OR IGNORE INTO user_skills
-    (user_id, skill_name)
-    VALUES (?, ?)
-  `);
-
-  const transaction = db.transaction(() => {
-    skills.forEach(skill => {
-      insertSkill.run(userId, skill);
-    });
-  });
-
-  transaction();
-}
-
-function getSkills(userId) {
-  return db.prepare(`
+async function getUserSkills(userId) {
+  const result = await db.query(`
     SELECT skill_name
     FROM user_skills
-    WHERE user_id = ?
-    ORDER BY skill_name
-  `).all(userId);
+    WHERE user_id = $1
+  `, [userId]);
+  return result.rows.map(row => row.skill_name);
 }
 
-function deleteSkills(userId) {
-  db.prepare(`
+async function saveSkills(userId, skills) {
+  for (const skill of skills) {
+    await db.query(`
+      INSERT INTO user_skills (user_id, skill_name)
+      VALUES ($1, $2)
+      ON CONFLICT (user_id, skill_name) DO NOTHING
+    `, [userId, skill]);
+  }
+}
+
+async function getSkills(userId) {
+  const result = await db.query(`
+    SELECT skill_name
+    FROM user_skills
+    WHERE user_id = $1
+    ORDER BY skill_name
+  `, [userId]);
+  return result.rows;
+}
+
+async function deleteSkills(userId) {
+  await db.query(`
     DELETE FROM user_skills
-    WHERE user_id = ?
-  `).run(userId);
+    WHERE user_id = $1
+  `, [userId]);
 }
 
 module.exports = {

@@ -3,32 +3,31 @@ const db = require("../config/database");
 const generateToken = require("../utils/generateToken");
 const jwt = require("jsonwebtoken");
 
-function currentResume(userId) {
-  return (
-    db
-      .prepare(
-        `
-        SELECT
-          original_filename AS name,
-          content_type AS contentType,
-          size_bytes AS size
-        FROM resumes
-        WHERE user_id = ?
-        AND is_current = 1
-      `
-      )
-      .get(userId) || null
+async function currentResume(userId) {
+  const result = await db.query(
+    `
+    SELECT
+      original_filename AS name,
+      content_type AS "contentType",
+      size_bytes AS size
+    FROM resumes
+    WHERE user_id = $1
+    AND is_current = 1
+    `,
+    [userId]
   );
+  return result.rows[0] || null;
 }
 
-function userResponse(user) {
+async function userResponse(user) {
+  const resume = await currentResume(user.id);
   return {
     user: {
       id: user.id,
       name: user.full_name,
       email: user.email
     },
-    resume: currentResume(user.id)
+    resume
   };
 }
 
@@ -51,11 +50,11 @@ exports.register = async (req, res) => {
       });
     }
 
-    const existingUser = db
-      .prepare(
-        "SELECT id FROM users WHERE email = ?"
-      )
-      .get(email);
+    const existingUserResult = await db.query(
+      "SELECT id FROM users WHERE email = $1",
+      [email]
+    );
+    const existingUser = existingUserResult.rows[0];
 
     if (existingUser) {
       return res.status(409).json({
@@ -67,32 +66,23 @@ exports.register = async (req, res) => {
     const passwordHash =
       await bcrypt.hash(password, 12);
 
-    const result = db
-      .prepare(
-        `
-        INSERT INTO users
-        (full_name, email, password_hash)
-        VALUES (?, ?, ?)
+    const result = await db.query(
       `
-      )
-      .run(
+      INSERT INTO users
+      (full_name, email, password_hash)
+      VALUES ($1, $2, $3)
+      RETURNING id, full_name, email
+      `,
+      [
         fullName,
         email,
         passwordHash
-      );
-
-    const user = db
-      .prepare(
-        `
-        SELECT id, full_name, email
-        FROM users
-        WHERE id = ?
-      `
-      )
-      .get(result.lastInsertRowid);
+      ]
+    );
+    const user = result.rows[0];
 
     if (req.file) {
-      db.prepare(
+      await db.query(
         `
         INSERT INTO resumes
         (
@@ -102,14 +92,15 @@ exports.register = async (req, res) => {
           content_type,
           size_bytes
         )
-        VALUES (?, ?, ?, ?, ?)
-      `
-      ).run(
-        user.id,
-        req.file.filename,
-        req.file.originalname,
-        req.file.mimetype,
-        req.file.size
+        VALUES ($1, $2, $3, $4, $5)
+        `,
+        [
+          user.id,
+          req.file.filename,
+          req.file.originalname,
+          req.file.mimetype,
+          req.file.size
+        ]
       );
     }
 
@@ -123,7 +114,7 @@ exports.register = async (req, res) => {
       });
 
     res.status(201).json(
-      userResponse(user)
+      await userResponse(user)
     );
   } catch (error) {
     console.error(error);
@@ -143,19 +134,19 @@ exports.login = async (req, res) => {
     const password =
       req.body.password || "";
 
-    const user = db
-      .prepare(
-        `
-        SELECT
-          id,
-          full_name,
-          email,
-          password_hash
-        FROM users
-        WHERE email = ?
+    const userResult = await db.query(
       `
-      )
-      .get(email);
+      SELECT
+        id,
+        full_name,
+        email,
+        password_hash
+      FROM users
+      WHERE email = $1
+      `,
+      [email]
+    );
+    const user = userResult.rows[0];
 
     if (!user) {
       return res.status(401).json({
@@ -184,7 +175,7 @@ exports.login = async (req, res) => {
         secure: process.env.NODE_ENV === "production",
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
-    res.json(userResponse(user));
+    res.json(await userResponse(user));
   } catch (error) {
     console.error(error);
 
@@ -195,7 +186,7 @@ exports.login = async (req, res) => {
 };
 
 exports.me = async (req, res) => {
-    res.json(userResponse(req.user));
+    res.json(await userResponse(req.user));
   };
 
 exports.logout = async (_req, res) => {

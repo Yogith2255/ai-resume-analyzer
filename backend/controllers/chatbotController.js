@@ -14,7 +14,7 @@ exports.sendMessage = async (req, res) => {
     }
 
     // 1. Get user skills
-    const userSkills = getUserSkills(userId);
+    const userSkills = await getUserSkills(userId);
 
     // 2. Get recommendations to calculate ATS matching & gaps
     const currentJobs = await getRecommendations(userSkills);
@@ -48,7 +48,7 @@ exports.analyzeJD = async (req, res) => {
     }
 
     // 1. Get user skills
-    const userSkills = getUserSkills(userId);
+    const userSkills = await getUserSkills(userId);
 
     // 2. Extract skills from the pasted JD
     const jdSkills = extractSkills(jdText);
