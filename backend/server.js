@@ -50,10 +50,10 @@ app.use(
   )
 );
 
-app.get("/", (_req, res) => {
-  res.json({
-    message: "CareerLens Backend API Running"
-  });
+app.get("*", (_req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../frontend-react/dist/index.html")
+  );
 });
 
 const PORT = process.env.PORT || 3000;
