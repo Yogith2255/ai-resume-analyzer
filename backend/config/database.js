@@ -2,9 +2,11 @@ const { Pool } = require("pg");
 
 const connectionString = process.env.DATABASE_URL;
 
+const isLocalhost = connectionString && (connectionString.includes("localhost") || connectionString.includes("127.0.0.1"));
+
 const pool = new Pool({
   connectionString,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
+  ssl: connectionString && !isLocalhost ? { rejectUnauthorized: false } : false
 });
 
 const initializeDatabase = async () => {

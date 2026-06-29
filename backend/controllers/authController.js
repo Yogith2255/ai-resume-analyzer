@@ -120,7 +120,7 @@ exports.register = async (req, res) => {
     console.error(error);
 
     res.status(500).json({
-      error: "Registration failed"
+      error: `Registration failed: ${error.message}`
     });
   }
 };
@@ -180,7 +180,7 @@ exports.login = async (req, res) => {
     console.error(error);
 
     res.status(500).json({
-      error: "Login failed"
+      error: `Login failed: ${error.message}`
     });
   }
 };
