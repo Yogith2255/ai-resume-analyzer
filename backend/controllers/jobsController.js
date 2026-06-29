@@ -17,7 +17,7 @@ exports.getRecommendations =
       console.log("User ID:", userId);
 
       const userSkills =
-        getUserSkills(userId);
+        await getUserSkills(userId);
 
       console.log(
         "User Skills:",
@@ -165,7 +165,7 @@ console.log(
 
       res.status(500).json({
         error:
-          "Failed to fetch recommendations"
+          `Failed to fetch recommendations: ${error.message}`
       });
     }
   };
