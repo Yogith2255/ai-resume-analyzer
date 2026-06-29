@@ -13,7 +13,7 @@ const authMiddleware = async (req, res, next) => {
 
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET || "careerlens_jwt_secret_2026"
     );
 
     const result = await db.query(
